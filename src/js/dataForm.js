@@ -1,13 +1,8 @@
 import Buttons from "./buttons.js";
 import Articulo from "./Articulo.js";
-import DataManager from "./DataManager.js";
-
-/**
- * crear las clases articulo y DataManager
- * importar las clases
- * crear el objeto dataManager antes del formulario, linea 143
- * 
- */
+import DataManager from "./dataManager.js";
+import apiEndPonints from "./endPoints.js";
+import conection from "./validConnection.js";
 
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -140,63 +135,105 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
+
+
+
+
+
 const dataManager = new DataManager('Articulos'); // Crear una instancia de DataManager
 
-document.getElementById('frmAltaProducto').addEventListener('submit', function (event) {
+document.getElementById("btnConection").addEventListener("click", async () => {
+
+    const resultado = await conection.establecerConexion(); // Llamar a la función para establecer la conexión
+    console.log(resultado); // Muestra el resultado en la consola
+    if (resultado.estadoDB) {
+        mostrarAlerta(resultado.estadoDB, 'alert alert-success');
+    } else if (resultado.errorDB) {
+        mostrarAlerta(resultado.errorDB, 'alert alert-danger');
+    }
+    else if (resultado.errorServer) {
+        mostrarAlerta(resultado.errorServer, 'alert alert-warning');
+    }
+
+    // mostrarAlerta(resultado.dato, 'alert alert-success'); // Muestra el JSON de forma legible
+});
+
+
+document.getElementById('frmAltaProducto').addEventListener('submit', async (event) => {
     event.preventDefault(); // Evita el envío del formulario
+    const form = event.target; // Obtiene el formulario actual
 
-
-    // Verificar si el formulario está válidado
-    if (!this.checkValidity()) {
-        this.classList.add('was-validated'); // Agrega estilos de validación de Bootstrap
+    //Verificar si el formulario está válidado
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated'); // Agrega estilos de validación de Bootstrap
         return; // Detiene la ejecución si el formulario no está válidado
     }
 
-    // Obtener los datos del formulario. this hace referencia al formulario actual frmAltaProducto
-    const formData = new FormData(this);
+    const formData = new FormData(form); // Crea un objeto FormData con los datos del formulario
+    const plainData = Object.fromEntries(formData.entries()); // convertir FormData a un objeto plano
 
 
-    // =====================lo hace el estudiante para validar que no se repita el id ===================
+    // ===================== validar que no se repita el id ===================
     const id = formData.get('txtIDArticulo'); // Obtener el ID del artículo
-    console.log("form", id); // Imprimir el ID en la consola
     const dbSession = dataManager.readData(); // Leer los datos de sessionStorage
 
     const idExiste = dbSession.some(articulo => articulo.id === id);
     if (idExiste) {
         mostrarAlerta("El ID del artículo ya existe, por favor ingrese otro ID", "alert alert-danger");
         return;
-    } // =============== hasta aquí
+    } // =============== 
 
 
-    const objArticulo = new Articulo(formData.get('txtIDArticulo'),
-        formData.get('txtNombre'),
-        formData.get('rngCantidad'),
-        formData.get('txtDescripcion'),
-        formData.get('txtPrecio'),
-        formData.get('cboCategoria'),
-        formData.get('rdbTipoVenta'));
+    const responseCreateProduct = await apiEndPonints.createProduct(plainData); // Llamar a la función para crear el producto
 
-    dataManager.createData(objArticulo); // Guardar el objeto en sessionStorage
+    if (responseCreateProduct.errorServer || responseCreateProduct.errorBD || responseCreateProduct.error) {
+        console.log(responseCreateProduct.errorServer || responseCreateProduct.errorBD || responseCreateProduct.error);
+        mostrarAlerta(responseCreateProduct.errorServer || responseCreateProduct.errorBD || responseCreateProduct.error, "alert alert-danger");
+        return;
+    }
+
+    if (responseCreateProduct.estado) {
+        mostrarAlerta(responseCreateProduct.mensaje, "alert alert-success");
+        resetearFormulario(form); // Llamar a la función para resetear el formulario
+    }
 
 
-    mostrarAlerta("Los datos han sido guardados exitosamente!!", "alert alert-success");
-    resetearFormulario(this); // Llamar a la función para resetear el formulario
-
-    //sessionStorage.setItem(formData.get('txtIDArticulo'), JSON.stringify([...formData.entries()]));
 });
 
 
-document.getElementById('btnShowProducts').addEventListener('click', function () {
 
-    const dbArticulos = dataManager.readData(); // Leer los datos de sessionStorage
 
-    // obtener el cuerpo de la tabla
-    const tbody = document.getElementById('tbodyProductos');
+document.getElementById('btnShowProducts').addEventListener('click', async () => {
+    const resultProducts = await apiEndPonints.selectAllProducts(); // Llamar a la función para obtener todos los productos
+    const tbody = document.getElementById('tbodyProductos'); // obtener el cuerpo de la tabla
 
-    // Agregar celdas con los valores del formulario
-    agregarFilaTabla(dbArticulos, tbody);
-    mostrarTablaProductos(); // Mostrar la tabla de productos
+    console.log(resultProducts); // // Muestra los datos en la consola resultProducts[0]
+
+    if (resultProducts.length === 0 || resultProducts.errorDB) {
+        mostrarAlerta("Error en la consulta o no hay datos que mostrar", "alert alert-danger");
+        ocultarTablaProductos();
+        return; // Detiene la ejecución si hay un error y no es necesario agregar un else
+    }
+
+    if (resultProducts.errorServer) {
+        mostrarAlerta("Error de conexión con el servidor!!", "alert alert-danger")
+        ocultarTablaProductos();
+        return;
+    }
+
+
+
+    mostrarTablaProductos();
+    agregarFilaTabla(resultProducts, tbody);// Agregar los datos a la tabla
+    mostrarTablaProductos(); // Mostrar la tabla de productos 
+
 });
+
+
+
+
+
+
 
 
 
@@ -205,16 +242,16 @@ document.getElementById('btnDeleteAllProducts').addEventListener('click', functi
     ocultarTablaProductos();
 });
 
-const agregarFilaTabla = (dataSession, tbody) => {
+const agregarFilaTabla = (dataDB, tbody) => {
 
     tbody.textContent = "";
 
-    for (const articulo of dataSession) {
+    for (const data of dataDB) {
         const newRow = document.createElement('tr');
 
-        const propiedades = ["id", "nombre", "cantidad", "descripcion", "precio", "categoria", "tipoVenta"];
+        const propiedades = ["codigoBarra", "nombre", "precio", "existencia", "IDmarca", "IDcategoria"];
         propiedades.forEach(propiedad => {
-            createCell(newRow, articulo[propiedad]);
+            createCell(newRow, data[propiedad]);
         });
 
         const actionsCell = document.createElement('td');
@@ -277,7 +314,7 @@ function mostrarAlerta(msg, tipoAlerta) {
                 divresponseInformation.style.display = "none";
                 divresponseInformation.classList.remove("fade-in", "fade-out");
             }, 2000); // Tiempo de duración de la animación (1 segundo)
-        }, 2000); // Tiempo de visualización del mensaje antes de desaparecer (2 segundos)
+        }, 7000); // Tiempo de visualización del mensaje antes de desaparecer (2 segundos)
 
     } catch (error) {
         console.log("Error en mostrar alerta: " + error);
