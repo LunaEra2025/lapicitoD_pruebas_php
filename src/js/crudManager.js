@@ -9,7 +9,7 @@ export default class CrudManager {
                 {
                     method: 'POST', // método de la petición
                     headers: { 'Content-Type': 'application/json' }, // tipo de contenido que se envía al servidor
-                    body: JSON.stringify({ datosFormulario: dataForm, tabla: nombreTabla }) // convierte el objeto a un string formato JSON
+                    body: JSON.stringify({ datosFormulario: dataForm, tabla: nombreTabla, operacion: 'create' }) // convierte el objeto a un string formato JSON
 
                 }
             );
@@ -35,7 +35,7 @@ export default class CrudManager {
                     method: 'POST', // método de la petición
                     headers: { 'Content-Type': 'application/json' }, // tipo de contenido que se envía al servidor
                     // Si deseas enviar datos, los pones aquí
-                    body: JSON.stringify({ tabla: nombreTabla }) // convierte un objeto en cadena JSON
+                    body: JSON.stringify({ tabla: nombreTabla, operacion: 'readAll' }) // convierte un objeto en cadena JSON
 
                 }
             );

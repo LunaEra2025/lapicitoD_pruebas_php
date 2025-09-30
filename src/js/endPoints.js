@@ -16,7 +16,7 @@ const apiService = new CrudManager('./src/database/'); // crea un objeto de Crud
 
 // dataForm son los datos que recibes del formulario
 // CREATE (nombre tabla,datos del formulario,nombre del archivo PHP)
-const createProduct = (dataForm) => apiService.createData('producto', dataForm, 'insertaProducto');
+const createProduct = (dataForm) => apiService.createData('producto', dataForm, 'crudProducto');
 
 
 // READ ALL

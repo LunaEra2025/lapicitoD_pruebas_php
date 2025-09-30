@@ -25,9 +25,6 @@ try{
         case 'read':
             leer($conn,$tabla, $datosFormulario);
             break;
-        case 'readAll':
-            leerTodos($conn,$tabla);
-            break;
         case 'update':
             actualizar($conn,$tabla, $datosFormulario);
             break;
@@ -36,63 +33,90 @@ try{
         default:
             throw new Exception("Operación no válida");
     }
-} catch(Exception $e) {
-    echo json_encode(["error" => "Error: " . $e->getMessage()]);
+
 }
 
-// FUNCIONES
-function insertar($conn, $tabla, $datosFormulario){
-    $campos = ['codigobarra', 'nombre', 'precio', 'existencia', 'idmarca', 'idcategoria'];
-    $mapeo = [
-        'codigobarra' => 'txtCodigoBarra',
-        'nombre'      => 'txtNombre',
-        'precio'      => 'txtPrecio',
-        'existencia'  => 'rngCantidad',
-        'idmarca'     => 'cboMarca',
-        'idcategoria' => 'cboCategoria'
-    ];
-
-    foreach ($mapeo as $claveBD => $claveForm) {
-        if (!isset($datosFormulario[$claveForm])) {
-            throw new Exception("Falta el campo del formulario: $claveForm");
+// este se lanza si hay algun error de conexion a la base de datos
+catch(Exception $e) {
+            echo json_encode(["error" => "Error: " . $e->getMessage()]);
         }
-    }
-
-    if(trim($datosFormulario['txtCodigoBarra'])===''){
-        throw new Exception("El ID no puede estar vacío");
-    }
-        
-    $campos = array_keys($mapeo);
-    $valores = array_map(fn($campo) => $datosFormulario[$mapeo[$campo]], $campos);
-    $placeholders = implode(', ', array_fill(0, count($campos), '?'));
-    $sql = "INSERT INTO `$tabla` (`" . implode('`, `', $campos) . "`) VALUES ($placeholders)";
-
-    $statement = $conn->prepare($sql);
-    if (!$statement) {
-        throw new Exception("Error al preparar la consulta");
-    }
     
-    $statement->execute($valores);
-    echo json_encode(['estado' => true, 'mensaje' => 'Datos insertados correctamente']);
-}
+    // métodos
 
-function leer($conn, $tabla, $datosFormulario){
-    // Pendiente implementar
-}
-
-function leerTodos($conn, $tabla){
-    // Pendiente implementar
-}
-
-function actualizar($conn, $tabla, $datosFormulario){
-    // Pendiente implementar
-}
-
-function eliminar($conn, $tabla, $datosFormulario){
-    // Pendiente implementar
-}
+function insertar($conn, $tabla, $datosFormulario){
+        try {
+            // se crea un mapa para asociar cada campo de la tabla con los nombres de los campos del formulario en el atributo name
+            $mapeo = [
+                'codigobarra' => 'txtCodigoBarra',
+                'nombre'      => 'txtNombre',
+                'precio'      => 'txtPrecio',
+                'existencia'  => 'rngCantidad',
+                'idmarca'     => 'cboMarca',
+                'idcategoria' => 'cboCategoria'
+            ];
 
 
+            // verifica que cada campo del formulario exista y tenga valor, hace una segunda validación ademàs de la que hace bootstrap
+            foreach ($mapeo as $claveBD => $claveForm) {
+                if (!isset($datosFormulario[$claveForm])) {
+                    throw new Exception("Falta el campo del formulario: $claveForm");
+                }
+            }
+
+            if(trim($datosFormulario['txtCodigoBarra'])===''){
+                throw new Exception("El ID no puede estar vacío");
+            }
+                
+            $campos = array_keys($mapeo); // crea un arreglo como los datos de las claves del mapa campos=['codigobarra', 'nombre', 'precio', 'existencia', 'idmarca', 'idcategoria']
+
+            // valores es un arreglo que contiene los valores del formulario, mapeados a los campos de la tabla
+            // $datosFormulario[$mapeo[$campo]] es como si fuera: $datosFormulario['txtCodigobarra']
+            $valores = array_map(fn($campo) => $datosFormulario[$mapeo[$campo]], $campos); 
+
+            // prepar la consulta SQL sin poner valores en cada campo
+            // count($campos) Cuenta cuántos campos tienes en tu tabla.
+            // array_fill(0, count($campos), '?') crea un arreglo iniciando en la posición 0, del tamaño indicado en count, y los llena con ?
+            // el resultado de fill es: ['?', '?', '?', '?', '?', '?']
+            // implode() convierte un arreglo en una cadena, separando por el delimitador especificado. el resultado es= '?, ?, ?, ?, ?, ?'
+
+            // $placeholders = marcadores de posición
+            $placeholders = implode(', ', array_fill(0, count($campos), '?'));
+            // en este caso, implode('`, `', $campos) convierte cada valor del arreglo campos en = `codigobarra`, `nombre`, `precio`, `existencia`, `idmarca`, `idcategoria
+            $sql = "INSERT INTO `$tabla` (`" . implode('`, `', $campos) . "`) VALUES ($placeholders)";
+
+            $statement = $conn->prepare($sql);// prepara la sentencia SQL para recibir en cada ? los valores que hacen falta
+                if (!$statement) { // si hay algun error lanza una excepción
+                    throw new Exception("Error al preparar la consulta: " . $conn->error);
+                }
+                
+                // lanza oficialmente la consulta a la base de datos
+                /*
+                    ? ← '123456'  (s)
+                    ? ← 'Lapicera' (s)
+                    ? ← 12.5       (d)
+                    ? ← 20         (i)
+                    ? ← 1          (s)
+                    ? ← 3          (i)*/
+                $statement->execute($valores); // PDO maneja los tipos de datos automáticamente. - PDO usa bindValue() o directamente un arreglo en execute().
+                /**
+                 * bindValue() es un método de PDO que asigna valores específicos a los marcadores de posición (?)
+                 *  en sentencias preparadas, uno por uno.
+                 */
+
+                echo json_encode(['estado' => true, 'mensaje' => 'Datos insertados correctamente']);
+
+
+        } catch (PDOException $e) { // se lanza si el nombre de la tabla es incorrecto, cuando se manda desde endPoints.js
+            // tambien se lanza cuando el nombre del cmapo es incorrecto o cuando el ID se repite
+            echo json_encode(["errorBD" => "Error en la inserción: ".$e->getMessage()]);
+        }
+
+        catch(Exception $e) { // se lanza cuando entra en cada throw de esta función
+            echo json_encode(["error" => "Error: " . $e->getMessage()]);
+        }
+            
+
+    }
 
 
 
