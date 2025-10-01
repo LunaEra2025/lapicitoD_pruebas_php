@@ -28,9 +28,12 @@ class ConexionDB {
         $user = 'root';
         $pass = 'root';
         $charset = 'utf8mb4';
-
+        //$port = 3306; 
         // crea una cadena de conexión de MYSQL que le dice a PDO cómo y dónde conectarse a la base de datos.
         $dsn = "mysql:host=$host;dbname=$dbname;charset=$charset"; // DSN data source name
+        
+        // $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=$charset";
+        
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, //- Le dice a PDO que, si ocurre un error con la BD, debe lanzar una excepción en lugar de quedarse callado o devolver un false.
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, // usa forma de arreglo asociativo (['nombre' => 'Erahin']) y no mezclado con índices numéricos.
