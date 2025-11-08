@@ -28,10 +28,14 @@ const selectAllCategoria = () => apiService.readAllData('categoria');
 
 
 // UPDATE
+
 // DELETE
+
+const deleteProduct = (id) => apiService.deleteData('producto', id);
 
 export default {
     createProduct,
     selectAllProducts,
-    selectAllCategoria
+    selectAllCategoria,
+    deleteProduct
 }

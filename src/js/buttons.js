@@ -16,12 +16,12 @@ const botones = {
         'alt': 'Eliminar',
         'className': 'btn-img'
     },
-    btnSave:
+    btnUpdate:
     {
-        'id': 'btnGuardar',
+        'id': 'btnUpdate',
         'ruta': './src/assets/icon/save.png',
-        'title': 'GUardar',
-        'alt': 'Guardar',
+        'title': 'Actualizar',
+        'alt': 'Actualizar',
         'className': 'btn-img'
     },
     btnCancel:

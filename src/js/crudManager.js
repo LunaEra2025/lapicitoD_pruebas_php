@@ -53,6 +53,29 @@ export default class CrudManager {
     }
 
     async updateData(nombreTabla, datos) { }
-    async deleteData(nombreTabla, datos) { }
+
+    // DELETE 
+
+    async deleteData(nombreTabla, datos) {
+        try {
+            //console.log(JSON.stringify({ datosFormulario: datos }))
+
+            const response = await fetch(this.apiUrl + 'crudProducto.php',
+                {
+                    method: 'POST', // método de la petición
+                    headers: { 'Content-Type': 'application/json' }, // tipo de contenido que se envía al servidor
+                    body: JSON.stringify({ datosFormulario: datos, tabla: nombreTabla, operacion: 'delete' }) // convierte el objeto a un string formato JSON
+
+                }
+            );
+            if (!response.ok) {
+                throw new Error('Error del servidor HTTP: ' + response.status); // lanza un error si el archivo o ruta es incorrecto
+            }
+            return await response.json(); // devuelve la respuesta JSON del servidor con los datos
+        } catch (error) {
+            // aqui no se necesita el await porque no es una promesa, es un objeto direto
+            return { errorServer: 'Error al insertar los datos: ' + error.message }; // manejo de error con el servidor
+        }
+    }
 
 } 

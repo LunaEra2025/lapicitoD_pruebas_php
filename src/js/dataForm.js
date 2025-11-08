@@ -24,16 +24,17 @@ document.addEventListener('DOMContentLoaded', function () {
     let datosCeldas = []; // Array para almacenar los datos de las celdas
 
 
-    // EVENTOS EN LOS BOTONES    
+    // EVENTOS EN LOS BOTONES    , la función debe ser asincrona
 
-    document.getElementById('tbodyProductos').addEventListener('click', function (event) {
+    document.getElementById('tbodyProductos').addEventListener('click', async function (event) {
         // event contiene información sobre el evento que ocurrió
         // event.target.id accede al elemento (etiqueta) específico dentro de #tbodyProductos que fue clickeado.
-
+        // id es la propiedad del boton
 
         // ACCIONES DE LOS BOTONES
 
         if (event.target.id === 'btnEditar') {
+
             const rowEdit = event.target.closest('tr');
             const cells = rowEdit.querySelectorAll('td'); // Selecciona todas las celdas de la fila
 
@@ -54,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             // aqui funciona con tarjet porque es el elemento que disparó el evento
-            Buttons.changeButtonEvent(event, Buttons.botones.btnSave.id, Buttons.botones.btnSave.ruta, Buttons.botones.btnSave.title); // Cambia el botón de editar a guardar
+            Buttons.changeButtonEvent(event, Buttons.botones.btnUpdate.id, Buttons.botones.btnUpdate.ruta, Buttons.botones.btnUpdate.title); // Cambia el botón de editar a guardar
 
             // no funciona con getElementById porque no es un nodo de documento, es una celda
             const deleteButton = rowEdit.querySelector('#btnEliminar'); // Selecciona el botón de eliminar
@@ -63,13 +64,20 @@ document.addEventListener('DOMContentLoaded', function () {
             return; // Salir de la función después de editar
         }
 
+
+        // Eliminar producto por ID
+
         if (event.target.id.startsWith('btnEliminar')) {
             const rowDelete = event.target.closest('tr'); // Encuentra la fila más cercana al botón
             const id = rowDelete.querySelectorAll('td')[0].textContent; // Obtiene el ID de la celda correspondiente
 
-            rowDelete.remove(); // Elimina la fila de la tabla
 
-            dataManager.delete(id); // Elimina el objeto del sessionStorage
+            const deleteProduct = await apiEndPonints.deleteProduct(id)
+            if (deleteProduct.estado) {
+                mostrarAlerta(deleteProduct.mensaje, "alert alert-success");
+            }
+
+            rowDelete.remove(); // Elimina la fila de la tabla
 
             // Ocultar la tabla si no hay más filas
             if (document.querySelectorAll('#tbodyProductos tr').length === 0) {
@@ -77,7 +85,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        if (event.target.id === 'btnGuardar') {
+
+
+        if (event.target.id === 'btnUpdate') {
+
             const rowSave = event.target.closest('tr');
             const id = rowSave.querySelectorAll('td')[0].textContent;
             const input = rowSave.querySelectorAll('input'); // Selecciona todas las celdas de la fila
@@ -90,7 +101,6 @@ document.addEventListener('DOMContentLoaded', function () {
             newObjArticulo.descripcion = input[2].value;
             newObjArticulo.precio = input[3].value;
             newObjArticulo.categoria = input[4].value;
-            newObjArticulo.tipoVenta = input[5].value;
 
 
 
@@ -126,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             Buttons.changeButtonEvent(event, Buttons.botones.btnDelete.id, Buttons.botones.btnDelete.ruta, Buttons.botones.btnDelete.title); // Cambia el botón de cancelar a eliminar
             // no funciona con getElementById porque no es un nodo de documento, es una celda
-            const saveButton = rowCancel.querySelector('#btnGuardar'); // Selecciona el botón de guardar
+            const saveButton = rowCancel.querySelector('#btnUpdate'); // Selecciona el botón de guardar
             Buttons.changeButtonNotEvent(saveButton, Buttons.botones.btnEdit.id, Buttons.botones.btnEdit.ruta, Buttons.botones.btnEdit.title); // Cambia el botón de guardar a editar
             return; // Salir de la función después de cancelar
         }
@@ -145,7 +155,7 @@ const dataManager = new DataManager('Articulos'); // Crear una instancia de Data
 document.getElementById("btnConection").addEventListener("click", async () => {
 
     const resultado = await conection.establecerConexion(); // Llamar a la función para establecer la conexión
-    console.log(resultado); // Muestra el resultado en la consola
+    //console.log(resultado); // Muestra el resultado en la consola
     if (resultado.estadoDB) {
         mostrarAlerta(resultado.estadoDB, 'alert alert-success');
     } else if (resultado.errorDB) {
@@ -207,7 +217,7 @@ document.getElementById('btnShowProducts').addEventListener('click', async () =>
     const resultProducts = await apiEndPonints.selectAllProducts(); // Llamar a la función para obtener todos los productos
     const tbody = document.getElementById('tbodyProductos'); // obtener el cuerpo de la tabla
 
-    console.log(resultProducts); // // Muestra los datos en la consola resultProducts[0]
+    //console.log(resultProducts); // // Muestra los datos en la consola resultProducts[0]
 
     if (resultProducts.length === 0 || resultProducts.errorDB) {
         mostrarAlerta("Error en la consulta o no hay datos que mostrar", "alert alert-danger");

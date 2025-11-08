@@ -119,6 +119,33 @@ function insertar($conn, $tabla, $datosFormulario){
     }
 
 
+    function eliminar($conn, $tabla, $datosFormulario){
+       
+        try {
+             //echo json_encode(["ID" => $datosFormulario]);           
+             $id = $datosFormulario ?? null; 
+             
+             //echo "el id es: ".$id;
+
+            $sql = "DELETE FROM `$tabla` WHERE `codigoBarra` = ?";
+            $statement = $conn->prepare($sql);
+            if (!$statement) {
+                throw new Exception("Error al preparar la consulta: " . $conn->error);
+            }
+
+            $statement->execute([$id]);
+
+            if ($statement->rowCount() > 0) {
+                echo json_encode(['estado' => true, 'mensaje' => 'Registro eliminado correctamente']);
+            } else {
+                echo json_encode(['estado' => false, 'mensaje' => 'No se encontró el registro para eliminar']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(["error" => "Error: " . $e->getMessage()]);
+        }
+    }
+
+
 
 ?>
 
