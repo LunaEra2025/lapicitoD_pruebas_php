@@ -146,6 +146,58 @@ function insertar($conn, $tabla, $datosFormulario){
     }
 
 
+    function actualizar($conn, $tabla, $datosFormulario){
+
+        try {
+            // Guarda el ID antes de crear el mapeo
+            $id = $datosFormulario['codigoBarra'];
+
+            // Mapeo solo de los campos que se pueden actualizar (sin el ID)
+            $mapeo = [
+                'nombre'      => 'nombre',
+                'precio'      => 'precio',
+                'existencia'  => 'existencia',
+                'idmarca'     => 'IDmarca',
+                'idcategoria' => 'IDcategoria'
+            ];
+
+            // Obtiene solo las claves del mapeo (nombres de columnas de la BD)
+            $campos = array_keys($mapeo);
+
+            // Crea un arreglo con los valores del formulario en el orden de los campos de la BD
+            // Ejemplo: ['Lapicera', '12.5', '20', 'M001', 'C001']
+            $valores = array_map(fn($campo) => $datosFormulario[$mapeo[$campo]], $campos);
+
+            // Crea la cláusula SET para la consulta UPDATE (sin incluir codigobarra)
+            // Resultado: "`nombre` = ?, `precio` = ?, `existencia` = ?, `idmarca` = ?, `idcategoria` = ?"
+            $setClause = implode(', ', array_map(fn($campo) => "`$campo` = ?", $campos));
+
+            // Construye la consulta SQL completa con la cláusula WHERE para actualizar solo el registro con el ID indicado
+            $sql = "UPDATE `$tabla` SET $setClause WHERE `codigoBarra` = ?";
+
+            // Prepara la sentencia SQL
+            $statement = $conn->prepare($sql);
+            if (!$statement) {
+                throw new Exception("Error al preparar la consulta: " . $conn->error);
+            }
+
+            // Agrega el ID al final del arreglo de valores para usarlo en la cláusula WHERE
+            // Ahora $valores tiene: ['Lapicera', '12.5', '20', 'M001', 'C001', '123456']
+            $valores[] = $id; // es como array.push
+
+            // Ejecuta la consulta con todos los valores, aqui asigna acada espacio con ? los valores del array en orden
+            $statement->execute($valores);
+
+            // Verifica si se actualizó algún registro
+            if ($statement->rowCount() > 0) {
+                echo json_encode(['estado' => true, 'mensaje' => 'Registro actualizado correctamente']);
+            } else {
+                echo json_encode(['estado' => false, 'mensaje' => 'No se encontró el registro para actualizar o no se realizó ningún cambio']);
+            }
+        } catch (Exception $e) { // este es el error con el servidor o el sql lanza un error
+            echo json_encode(["error" => "Error: " . $e->getMessage()]);
+        }
+    }   
 
 ?>
 

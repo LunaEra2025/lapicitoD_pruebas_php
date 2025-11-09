@@ -1,5 +1,5 @@
-- usa sneake_case para el archivo pruebasUnitarias.js
-- usa sneake_case para nombre de funciones y variables
+- usa snake_case para el archivo pruebasUnitarias.js
+- usa snake_case para nombre de funciones y variables
 - para todo el proyecto, agrega comentarios en español
 - Usa nombres de variables en español
 

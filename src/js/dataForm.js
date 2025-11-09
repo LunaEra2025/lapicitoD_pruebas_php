@@ -75,9 +75,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const deleteProduct = await apiEndPonints.deleteProduct(id)
             if (deleteProduct.estado) {
                 mostrarAlerta(deleteProduct.mensaje, "alert alert-success");
+                rowDelete.remove(); // Elimina la fila de la tabla
             }
 
-            rowDelete.remove(); // Elimina la fila de la tabla
+
 
             // Ocultar la tabla si no hay más filas
             if (document.querySelectorAll('#tbodyProductos tr').length === 0) {
@@ -93,26 +94,43 @@ document.addEventListener('DOMContentLoaded', function () {
             const id = rowSave.querySelectorAll('td')[0].textContent;
             const input = rowSave.querySelectorAll('input'); // Selecciona todas las celdas de la fila
 
-            const newObjArticulo = new Articulo(); // Crear una nueva instancia de Articulo
+            // Obtener todos los datos de la fila
+            const datos_fila = {
+                codigoBarra: id,
+                nombre: input[0].value,
+                precio: input[1].value,
+                existencia: input[2].value,
+                IDmarca: input[3].value,
+                IDcategoria: input[4].value
+            };
 
-            newObjArticulo.id = id; // Asigna el ID de la celda correspondiente
-            newObjArticulo.nombre = input[0].value;
-            newObjArticulo.cantidad = input[1].value;
-            newObjArticulo.descripcion = input[2].value;
-            newObjArticulo.precio = input[3].value;
-            newObjArticulo.categoria = input[4].value;
 
+            // Enviar datos a endPoints
+            const response_update = await apiEndPonints.updateProduct(datos_fila);
 
+            if (response_update.estado) {
+                mostrarAlerta(response_update.mensaje, "alert alert-success");
 
-            dataManager.updateData(id, newObjArticulo); // Actualiza el objeto en sessionStorage
-            const dbArticulos = dataManager.readData(); // Leer los datos de sessionStorage
+                // Actualizar solo la fila editada sin hacer otra petición al servidor
+                const celdas = rowSave.querySelectorAll('td');
+                celdas[1].textContent = datos_fila.nombre;
+                celdas[2].textContent = datos_fila.precio;
+                celdas[3].textContent = datos_fila.existencia;
+                celdas[4].textContent = datos_fila.IDmarca;
+                celdas[5].textContent = datos_fila.IDcategoria;
 
-            // obtener el cuerpo de la tabla
-            const tbody = document.getElementById('tbodyProductos');
+                // Restaurar botones a su estado original
+                Buttons.changeButtonEvent(event, Buttons.botones.btnEdit.id, Buttons.botones.btnEdit.ruta, Buttons.botones.btnEdit.title);
 
-            // Agregar celdas con los valores del formulario
-            agregarFilaTabla(dbArticulos, tbody);
-            mostrarTablaProductos(); // Mostrar la tabla de productos
+                const cancelButton = rowSave.querySelector('#btnCancelar');
+                Buttons.changeButtonNotEvent(cancelButton, Buttons.botones.btnDelete.id, Buttons.botones.btnDelete.ruta, Buttons.botones.btnDelete.title);
+
+            } else if (response_update.error) {
+                mostrarAlerta("Error desconocido con el servidor o sentencia SQL!!", "alert alert-danger");
+            } else {
+                mostrarAlerta(response_update.mensaje, "alert alert-danger");
+            }
+
             return; // Salir de la función después de guardar
         }
 
@@ -231,9 +249,6 @@ document.getElementById('btnShowProducts').addEventListener('click', async () =>
         return;
     }
 
-
-
-    mostrarTablaProductos();
     agregarFilaTabla(resultProducts, tbody);// Agregar los datos a la tabla
     mostrarTablaProductos(); // Mostrar la tabla de productos 
 
