@@ -5,7 +5,9 @@
 node_modules/
 
 # Pruebas unitarias
-unittest/
+unitTest/
+package-lock.json
+package.json
 
 # Configuración de agentes (Kiro / Amazon Q)
 .amazonq/agents.md
