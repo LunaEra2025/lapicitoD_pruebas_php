@@ -107,7 +107,7 @@ function insertar($conn, $tabla, $datosFormulario){
 
 
         } catch (PDOException $e) { // se lanza si el nombre de la tabla es incorrecto, cuando se manda desde endPoints.js
-            // tambien se lanza cuando el nombre del cmapo es incorrecto o cuando el ID se repite
+            // tambien se lanza cuando el nombre del campo es incorrecto o cuando el ID se repite
             echo json_encode(["errorBD" => "Error en la inserción: ".$e->getMessage()]);
         }
 

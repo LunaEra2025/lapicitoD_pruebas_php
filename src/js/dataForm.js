@@ -246,7 +246,7 @@ document.getElementById('btnShowProducts').addEventListener('click', async () =>
     const resultProducts = await apiEndPoints.selectAllProducts(); // Llamar a la función para obtener todos los productos
     const tbody = document.getElementById('tbodyProductos'); // obtener el cuerpo de la tabla
 
-    //console.log(resultProducts); // // Muestra los datos en la consola resultProducts[0]
+    console.log(resultProducts); // // Muestra los datos en la consola resultProducts[0]
 
     if (resultProducts.length === 0 || resultProducts.errorDB) {
         mostrarAlerta("Error en la consulta o no hay datos que mostrar", "alert alert-danger");

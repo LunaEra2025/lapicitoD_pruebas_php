@@ -28,4 +28,7 @@ function ruta(archivo) {
 }
 
 
+
+
+
 export default { esCorreoValido, tablaMultiplicar, ruta };

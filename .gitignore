@@ -8,6 +8,7 @@ node_modules/
 unitTest/
 package-lock.json
 package.json
+vitest.config.js
 
 # Configuración de agentes (Kiro / Amazon Q)
 .amazonq/
