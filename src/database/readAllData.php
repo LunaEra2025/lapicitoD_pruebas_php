@@ -9,7 +9,7 @@ try {
     $entrada = json_decode(file_get_contents('php://input'), true);
     $tabla=$entrada['tabla'] ?? null; // si no existe la tabla o no se envió al invocarlo, le asigna null
 
-    $tablasValidas = ['producto', 'categoria', 'cliente','usuario2'];
+    $tablasValidas = ['producto', 'categoria', 'cliente', 'usuario2', 'marca'];
     if (!in_array($tabla, $tablasValidas)) {
         echo json_encode(["errorDB" => "Tabla no permitida."]);
         exit;

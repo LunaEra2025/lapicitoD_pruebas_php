@@ -1,0 +1,15 @@
+# Variables de entorno (contiene credenciales, nunca subir al repositorio)
+.env
+
+# Dependencias
+node_modules/
+
+# Pruebas unitarias
+unittest/
+
+# Configuración de agentes (Kiro / Amazon Q)
+.amazonq/agents.md
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db

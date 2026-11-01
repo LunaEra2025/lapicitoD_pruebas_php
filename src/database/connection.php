@@ -23,35 +23,40 @@ try {
 
 class ConexionDB {
     public static function setConnection() {
-        $host = 'localhost';
-        $dbname = 'papeleria3a';
-        $user = 'root';
-        $pass = 'root';
-        $charset = 'utf8mb4';
-        //$port = 3306; 
+
+        // Carga las variables de entorno desde el archivo .env ubicado en la raíz del proyecto.
+        // __DIR__ apunta a src/database/, por eso se sube dos niveles con ../../
+        $envPath = __DIR__ . '/../../.env';
+
+        if (!file_exists($envPath)) {
+            throw new Exception('Archivo .env no encontrado. Copia .env.example a .env y configura tus credenciales.');
+        }
+
+        // parse_ini_file() lee el archivo .env y devuelve un arreglo asociativo con las variables
+        $env = parse_ini_file($envPath);
+
+        $host    = $env['DB_HOST']    ?? 'localhost';
+        $dbname  = $env['DB_NAME']    ?? '';
+        $user    = $env['DB_USER']    ?? '';
+        $pass    = $env['DB_PASS']    ?? '';
+        $charset = $env['DB_CHARSET'] ?? 'utf8mb4';
+
         // crea una cadena de conexión de MYSQL que le dice a PDO cómo y dónde conectarse a la base de datos.
         $dsn = "mysql:host=$host;dbname=$dbname;charset=$charset"; // DSN data source name
-        
-        // $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=$charset";
-        
+
         $options = [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, //- Le dice a PDO que, si ocurre un error con la BD, debe lanzar una excepción en lugar de quedarse callado o devolver un false.
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, // usa forma de arreglo asociativo (['nombre' => 'Erahin']) y no mezclado con índices numéricos.
-            PDO::ATTR_EMULATE_PREPARES => false, // - Desactiva la emulación de sentencias preparadas, lo que mejora la seguridad (contra inyecciones SQL) y el rendimiento.
-            // y fuerza a usar las sentencias preparadas reales del servidor MySQL
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,       // lanza excepciones en vez de errores silenciosos
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,             // arreglo asociativo (['nombre' => 'Erahin'])
+            PDO::ATTR_EMULATE_PREPARES   => false,                        // sentencias preparadas reales (más seguro contra SQL injection)
         ];
 
         try {
-            return new PDO($dsn, $user, $pass, $options); // devuelve un objeto PDO de concexión a la base de datos para que pueda ser usado
+            return new PDO($dsn, $user, $pass, $options); // devuelve un objeto PDO de conexión a la base de datos
         } catch (PDOException $e) {
-            // con esta opción 1 no necesitas try catch en validConection.php por que al generar una excepción aquí, se detiene la ejecución con exit;
-            //echo json_encode(['errorDB' => 'Error de conexión a la Base de datos: ' . $e->getMessage()]); 
-             //exit;
-
-            // si ocupas la opcion 2 entonces debes lanzar una excepción y manejarla en validConection.php
+            // lanza la excepción para que sea manejada en validConnection.php o en el archivo que invoque setConnection()
             throw new Exception('Error de conexión a la Base de datos: ' . $e->getMessage());
-           
-            // para probar se crea validConection.php y se ingresa a la ruta: http://localhost/pryfrmcrud_papeleria/src/database/validConnection.php
+
+            // para probar se crea validConection.php y se ingresa a la ruta: http://localhost/lapicitoD2026/src/database/validConnection.php
         }
     }
 }

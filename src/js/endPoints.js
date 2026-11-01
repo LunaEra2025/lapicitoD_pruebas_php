@@ -25,6 +25,7 @@ const createProduct = (dataForm) => apiService.createData('producto', dataForm, 
 // por que readAllData lee todos los datos de cada tabla
 const selectAllProducts = () => apiService.readAllData('producto');
 const selectAllCategoria = () => apiService.readAllData('categoria');
+const selectAllMarcas = () => apiService.readAllData('marca');
 
 
 // UPDATE
@@ -37,6 +38,7 @@ export default {
     createProduct,
     selectAllProducts,
     selectAllCategoria,
+    selectAllMarcas,
     updateProduct,
     deleteProduct
 }

@@ -1,7 +1,5 @@
 import Buttons from "./buttons.js";
-import Articulo from "./Articulo.js";
-import DataManager from "./dataManager.js";
-import apiEndPonints from "./endPoints.js";
+import apiEndPoints from "./endPoints.js";
 import conection from "./validConnection.js";
 
 
@@ -12,13 +10,39 @@ document.addEventListener('DOMContentLoaded', function () {
         return; // evita que el resto del código se ejecute
     }
 
+    // ── Dashboard: total de productos ────────────────────────────────────────
+    actualizarDashboard();
+
+    // ── Poblar select de marcas desde la BD ───────────────────────────────────
+    apiEndPoints.selectAllMarcas().then(function (marcas) {
+        const select = document.getElementById('cboMarca');
+        if (!select) return;
+
+        // Limpiar y colocar el placeholder
+        select.innerHTML = '<option selected disabled value="">Elige una marca...</option>';
+
+        if (!Array.isArray(marcas)) {
+            select.innerHTML = '<option disabled value="">Error al cargar marcas</option>';
+            return;
+        }
+
+        marcas.forEach(function (marca) {
+            const option = document.createElement('option');
+            option.value = marca.IDmarca;           // valor que se envía a la BD (M001, M002…)
+            option.textContent = marca.nombreMarca; // texto visible (Bic, Staedtler…)
+            select.appendChild(option);
+        });
+    });
+
 
     // Ocultar la tabla al cargar la página
     ocultarTablaProductos(); // Llama a la función para ocultar la tabla
 
-    // Capturar el evento de cambio en el rango y actualizar el valor del <output>
+    // Capturar el evento de cambio en el rango y actualizar el valor del <output> y la etiqueta
     document.getElementById('rngCantidad').addEventListener('input', function () {
         this.nextElementSibling.value = this.value;
+        const lbl = document.getElementById('rngValor');
+        if (lbl) lbl.textContent = this.value;
     });
 
     let datosCeldas = []; // Array para almacenar los datos de las celdas
@@ -72,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const id = rowDelete.querySelectorAll('td')[0].textContent; // Obtiene el ID de la celda correspondiente
 
 
-            const deleteProduct = await apiEndPonints.deleteProduct(id)
+            const deleteProduct = await apiEndPoints.deleteProduct(id)
             if (deleteProduct.estado) {
                 mostrarAlerta(deleteProduct.mensaje, "alert alert-success");
                 rowDelete.remove(); // Elimina la fila de la tabla
@@ -106,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
             // Enviar datos a endPoints
-            const response_update = await apiEndPonints.updateProduct(datos_fila);
+            const response_update = await apiEndPoints.updateProduct(datos_fila);
 
             if (response_update.estado) {
                 mostrarAlerta(response_update.mensaje, "alert alert-success");
@@ -168,10 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-const dataManager = new DataManager('Articulos'); // Crear una instancia de DataManager
-
 document.getElementById("btnConection").addEventListener("click", async () => {
-
     const resultado = await conection.establecerConexion(); // Llamar a la función para establecer la conexión
     //console.log(resultado); // Muestra el resultado en la consola
     if (resultado.estadoDB) {
@@ -201,18 +222,7 @@ document.getElementById('frmAltaProducto').addEventListener('submit', async (eve
     const plainData = Object.fromEntries(formData.entries()); // convertir FormData a un objeto plano
 
 
-    // ===================== validar que no se repita el id ===================
-    const id = formData.get('txtIDArticulo'); // Obtener el ID del artículo
-    const dbSession = dataManager.readData(); // Leer los datos de sessionStorage
-
-    const idExiste = dbSession.some(articulo => articulo.id === id);
-    if (idExiste) {
-        mostrarAlerta("El ID del artículo ya existe, por favor ingrese otro ID", "alert alert-danger");
-        return;
-    } // =============== 
-
-
-    const responseCreateProduct = await apiEndPonints.createProduct(plainData); // Llamar a la función para crear el producto
+    const responseCreateProduct = await apiEndPoints.createProduct(plainData); // Llamar a la función para crear el producto
 
     if (responseCreateProduct.errorServer || responseCreateProduct.errorBD || responseCreateProduct.error) {
         console.log(responseCreateProduct.errorServer || responseCreateProduct.errorBD || responseCreateProduct.error);
@@ -222,7 +232,8 @@ document.getElementById('frmAltaProducto').addEventListener('submit', async (eve
 
     if (responseCreateProduct.estado) {
         mostrarAlerta(responseCreateProduct.mensaje, "alert alert-success");
-        resetearFormulario(form); // Llamar a la función para resetear el formulario
+        resetearFormulario(form);
+        actualizarDashboard(); // refresca el contador de productos en el dashboard
     }
 
 
@@ -232,7 +243,7 @@ document.getElementById('frmAltaProducto').addEventListener('submit', async (eve
 
 
 document.getElementById('btnShowProducts').addEventListener('click', async () => {
-    const resultProducts = await apiEndPonints.selectAllProducts(); // Llamar a la función para obtener todos los productos
+    const resultProducts = await apiEndPoints.selectAllProducts(); // Llamar a la función para obtener todos los productos
     const tbody = document.getElementById('tbodyProductos'); // obtener el cuerpo de la tabla
 
     //console.log(resultProducts); // // Muestra los datos en la consola resultProducts[0]
@@ -263,7 +274,8 @@ document.getElementById('btnShowProducts').addEventListener('click', async () =>
 
 
 document.getElementById('btnDeleteAllProducts').addEventListener('click', function () {
-    dataManager.clear(); // Limpiar el sessionStorage
+    // Limpia las filas del DOM y oculta la tabla
+    document.getElementById('tbodyProductos').textContent = '';
     ocultarTablaProductos();
 });
 
@@ -344,4 +356,28 @@ function mostrarAlerta(msg, tipoAlerta) {
     } catch (error) {
         console.log("Error en mostrar alerta: " + error);
     }
+}
+
+
+// ── Cerrar sesión ────────────────────────────────────────────────────────────
+document.getElementById('btnLogout').addEventListener('click', function () {
+    sessionStorage.removeItem('isLoggedIn');
+    window.location.href = 'login.html';
+});
+
+
+// ── Cerrar sesión ────────────────────────────────────────────────────────────
+document.getElementById('btnLogout').addEventListener('click', function () {
+    sessionStorage.removeItem('isLoggedIn');
+    window.location.href = 'login.html';
+});
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+// Función independiente para poder llamarla tanto al cargar como tras cada alta
+function actualizarDashboard() {
+    apiEndPoints.selectAllProducts().then(function (productos) {
+        const tarjeta = document.getElementById('dashTotalProductos');
+        if (!tarjeta) return;
+        tarjeta.textContent = Array.isArray(productos) ? productos.length : 'Error';
+    });
 }

@@ -1,303 +1,358 @@
+/**
+ * pdfReport.js — Genera el reporte PDF del inventario de La Picito
+ * Usa jsPDF 3.0.1 + jspdf-autotable 5.0.2
+ * Lee los datos directamente desde la base de datos (no localStorage)
+ */
+
+import apiEndPoints from './endPoints.js';
+
 const { jsPDF } = window.jspdf;
-import DataManager from "./dataManager.js";
 
+// Paleta de colores corporativa
+const COLOR = {
+    primary: [30, 64, 175],   // azul oscuro  #1e40af
+    accent: [37, 99, 235],   // azul medio   #2563eb
+    lightBlue: [219, 234, 254],  // azul claro   #dbeafe
+    amber: [245, 158, 11],   // ámbar        #f59e0b
+    dark: [30, 41, 59],   // slate-800
+    muted: [100, 116, 139],  // slate-500
+    white: [255, 255, 255],
+    success: [22, 163, 74],    // verde
+};
+
+// Categorías del sistema (id → nombre)
+const CATEGORIAS = {
+    '1': 'Papelería',
+    '2': 'Oficina',
+    '3': 'Escolar',
+    '4': 'Arte',
+    '5': 'Manualidades',
+    '6': 'Dibu. Técnico',
+    '7': 'Rotulación',
+    '8': 'Decoración',
+};
+
+// ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-
-
 
     document.getElementById('PDFReport').addEventListener('click', async () => {
         try {
-            const url = 'https://static.vecteezy.com/system/resources/previews/009/989/413/non_2x/stationery-with-ruler-pencil-pen-and-note-cartoon-icon-illustration-education-object-icon-concept-isolated-premium-flat-cartoon-style-vector.jpg';
+            // ── 1. Obtener datos de la BD ─────────────────────────────────
+            const productos = await apiEndPoints.selectAllProducts();
 
-            // devuelve una URL de datos conpatible con la librería JSPDF
-            const datosImagen = await cargarImagen(url);
-
-            // se puede usar directo pero con fallas si el navegador no permite restricciones CORS 
-            //doc.addImage('https://detqhtv6m6lzl.cloudfront.net/HCLContenido/producto/FullImage/3417761811221-1.jpg', "JPEG", 0, 0, 30, 30);
-
-            /**
-             * Cross-Origin Resource Sharing (en español: Intercambio de Recursos de Origen Cruzado), y es un mecanismo de seguridad que implementan los navegadores para controlar qué recursos web pueden ser accedidos desde otro dominio.
-             */
-
-
-
-            // ==================CREAR EL PDF =========================0
-
-            const doc = new jsPDF({  // version 3.0.1
-                orientation: 'portrait', // postrait=> vertical 'landscape' = horizontal
-                format: 'letter', // Formato de la página y respeta el amrgen inferior del pie de pagina
-                unit: 'mm', // Unidades en milímetros, una hoja t/c tiene 21.59 mm de ancho y 27.94 de alto
-
-                /*margin: {
-                    top: 50, right: 50, bottom: 10, left: 10
-                }*/
-            });
-
-            // Creamos el encabezado
-            encabezado(doc, datosImagen);
-
-            // ==============================AQUI YA PODEMOS PROBAR EL PDF CON   doc.save("documento.pdf");
-
-
-
-
-            // ========= CONECTAR CON EL LOCALSTORAGE PARA CARGAR LA TABLA=========
-
-            const objDataManager = new DataManager("Articulos");
-            const articulos = objDataManager.readData();
-
-            // Se usa un mapa por que necesitamos solo los valores de las propiedades del artículo
-            // las propiedades es tal cual aparecen en el localstorage, devuelve un array con los valores
-            const cuerpoTabla = articulos.map(articulos => [articulos.id, articulos.nombre, articulos.cantidad, articulos.descripcion, articulos.precio, articulos.categoria, articulos.tipoVenta]);
-            //console.log(datosTabla);
-
-
-            // ============ ESTE CÓDIGO FUNCIONA CON LA LIBRERIA jspdf-autotable 5.0.2
-
-            // una hoja t/c tiene 21.59 (215.9) cm de ancho y 27.94 (279.4) de alto 
-            //bjeto de configuración que define cómo debe verse y comportarse la tabla
-            const optionsTable = {
-                startY: 40, // 4 cm márgen superior de la tabla desde el borde del documento PDF
-                theme: 'grid', // Estilo de la tabla (ver mas abajo estan otros ejemplos)
-                headStyles: { // Estilos del encabezado de la tabla
-                    fillColor: [41, 128, 185], // formato R, G, B
-                    textColor: 255,
-                    fontSize: 12,
-                    font: 'Helvetica',
-                    fontStyle: "bold",
-                    halign: 'center' //halign es Horizontal aligment
-                },
-                //bodyStyles: { textColor: [255, 195, 0], fontSize: 8 }, // Estilos del cuerpo puede ser en RGB
-                bodyStyles: { textColor: 0, fontSize: 8, font: 'Helvetica' }, // Estilos del cuerpo
-            };
-
-
-            doc.autoTable({
-                head: [['ID', 'NOMBRE', 'CANTIDAD', 'DESCRIPCIÓN', 'PRECIO', 'CATEGORÍA', 'TIPO VENTA']],
-                body: cuerpoTabla,
-                ...optionsTable, // objeto de configuración que define cómo debe verse y comportarse la tabla, inyecta el codigo al autotable con el operador de propagación
-                didParseCell: function (data) { // didParseCell permite el parse de cada celda antes de que se dibuje en el PDF
-
-                    // para formatear a moneda, verifica que no sea la fila del encabezado, después busca las columnasa formatear
-                    // if (data.section !== "head" && data.column.index === 2 || data.column.index === 4)
-                    if (data.section !== "head" && data.column.index === 4) {
-                        const precio = parseFloat(data.cell.raw); // Convierte el valor de la celda a un número
-                        if (!isNaN(precio)) { // Verifica que sea un número válido
-                            // Formatea el valor y lo agrega a la celda
-                            data.cell.text = "$ " + precio.toFixed(2);
-                        }
-                    }
-                }
-            });
-
-            // ================ HASTA AQUÍ TERMINA LA PARTE DE REPORTE DEL LOCAL STORAGE ===============
-
-
-            // ================ EMPEZAMOS CON EL CONTEO DE LAS CATEGORÍAS ==================
-
-            // recuperamos el total de cada categoría creando un objeto vacío para almacenar cada categoría con sus conteos
-            const categoryCounts = {};
-
-            for (const articulo of articulos) { // recorre la base de datos localstorage
-                if (categoryCounts.hasOwnProperty(articulo.categoria)) { // verifica si ya tiene una propiedad con esa categoría
-                    categoryCounts[articulo.categoria]++; // si ya lo tiene, entonces solo incrementa la unidad
-                } else {
-                    categoryCounts[articulo.categoria] = 1; // en caso contrario crea una nueva propiedad y le da el valor de 1
-                }
-
+            if (!productos || productos.errorDB || productos.errorServer) {
+                alert('No se pudo obtener los datos de la base de datos.\nVerifica la conexión e intenta de nuevo.');
+                return;
             }
-            console.log(categoryCounts);
 
+            if (productos.length === 0) {
+                alert('No hay productos registrados para exportar.');
+                return;
+            }
 
-            // ================ GRAFICAR LAS CATEGORÍAS =======================
+            // ── 2. Crear documento ────────────────────────────────────────
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                format: 'letter',
+                unit: 'mm',
+            });
 
+            const pageW = doc.internal.pageSize.getWidth();   // 215.9 mm
+            const pageH = doc.internal.pageSize.getHeight();  // 279.4 mm
+            const margenL = 14;
+            const margenR = pageW - 14;
+
+            // ── 3. Página 1: encabezado + tabla ───────────────────────────
+            const yPostHeader = dibujarEncabezado(doc, pageW, margenL, margenR);
+            dibujarTablaProductos(doc, productos, yPostHeader, margenL);
+
+            // ── 4. Página 2: gráfica de barras por categoría ──────────────
             doc.addPage();
-            encabezado(doc, datosImagen);
+            dibujarEncabezado(doc, pageW, margenL, margenR);
+            dibujarGraficaCategorias(doc, productos, pageW, pageH, margenL);
 
-            // Crear gráfica de barras 
-            const chartPosX = 10; // margen izquierdo 
-            const chartPosY = 200; // margen superior hasta el inicio de la gráfica, 279 MM TOTAL VERTICAL DE LA HOJA
-            const chartWidth = 180; // ancho total de la gráfica de barra
-            const maxBarHeight = 100; // altura máxima de la gráfica de barras
-            const barSpacing = 5; // espaciado entre columnas
-
-            graficaBarras(doc, categoryCounts, chartPosX, chartPosY, chartWidth, maxBarHeight, barSpacing);
-
-
-            // ========== NÚMEROS DE PÀGINA =========================
-
-            doc.setFont("Helvetica", "bold"); // nueva libreria jspdf 3.0.1
-            doc.setFontSize(10); // tamaño
-            doc.setTextColor(118, 18, 4); // establece el color en RGB (0, 0, 255) 
-
-            // Obtener el número total de páginas
+            // ── 5. Pie de página en todas las páginas ─────────────────────
             const totalPages = doc.internal.getNumberOfPages();
-
-            // Agregar números de página a cada página
             for (let i = 1; i <= totalPages; i++) {
-                // Ir a la página específica
                 doc.setPage(i);
-                //  si lo quieres centrado
-                //doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
-
-                // Agregar el número de página en la parte inferior derecha de la página
-                doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 10, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+                dibujarPiePagina(doc, i, totalPages, pageW, pageH, margenL, margenR);
             }
 
-
-
-
-            doc.save("documento.pdf");
+            // ── 6. Guardar ────────────────────────────────────────────────
+            const fecha = new Date().toLocaleDateString('es-MX').replace(/\//g, '-');
+            doc.save(`LaPicito_Inventario_${fecha}.pdf`);
 
         } catch (error) {
-            console.log("Error" + error);
+            console.error('Error al generar el PDF:', error);
+            alert('Ocurrió un error al generar el PDF: ' + error.message);
         }
-
-
     });
 
 });
 
-function cargarImagen(urlImg) {
 
-    // Devuelve una promesa
-    return new Promise(function (resolve, reject) {
+// ═══════════════════════════════════════════════════════════
+// ENCABEZADO
+// ═══════════════════════════════════════════════════════════
+function dibujarEncabezado(doc, pageW, margenL, margenR) {
 
-        // se crea un objeto imagen para poder cargar la imagen en un canvas
-        let img = new Image();
+    // Barra superior azul oscuro
+    doc.setFillColor(...COLOR.primary);
+    doc.rect(0, 0, pageW, 28, 'F');
 
-        // Permitir el acceso a la imagen desde un origen diferente (CORS) y vitar que se bloquee al cargar la imágen
-        img.crossOrigin = "anonymous";
+    // Línea de acento ámbar
+    doc.setFillColor(...COLOR.amber);
+    doc.rect(0, 28, pageW, 1.5, 'F');
 
-        img.onload = function () { // se ejecutará cuando se invoca img.src
+    // Nombre de la empresa
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(...COLOR.white);
+    doc.text('La Picito', margenL, 12);
 
-            // se crea un nuevo lienzo para crear gráficos como imagenes 
-            const canvas = document.createElement('canvas');
+    // Subtítulo
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(186, 210, 253); // azul muy claro
+    doc.text('Sistema de Gestión de Inventario', margenL, 18);
 
-            // se obtiene un contexto para dibujar en el lienzo
-            const ctx = canvas.getContext('2d');
+    // Título del reporte
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...COLOR.white);
+    doc.text('REPORTE DE INVENTARIO', margenL, 24);
 
-            // TAMAÑO DE LA IMAGEN, AUNQUE NO ES NECESARIO POR QUE LO ESTWABLECE AL COLOCARLO EN EL PDF EN EL ENCABEZADO
-            canvas.width = img.width; // se establece el ancho del lienzo que coincida con el ancho de la imagen
-            canvas.height = img.height; // se establece el alto del lienzo que coincida con la altura de la imagen
-            ctx.drawImage(img, 0, 0); // se dibuja la imagen en la posicion 0,0 osea a la izquierda
+    // Fecha alineada a la derecha
+    const fecha = new Date().toLocaleDateString('es-MX', {
+        year: 'numeric', month: 'long', day: 'numeric'
+    });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(186, 210, 253);
+    doc.text(`Generado: ${fecha}`, margenR, 24, { align: 'right' });
 
-
-            // SI QUIERES CAMBIAR EL TAMAÑO DE LA IMAGEN
-
-            // const nuevoAncho = 200; // por ejemplo, 200 píxeles
-            // const nuevoAlto = 100;  // por ejemplo, 100 píxeles
-            // canvas.width = nuevoAncho;
-            // canvas.height = nuevoAlto;
-            // ctx.drawImage(img, 0, 0, nuevoAncho, nuevoAlto);
-
-            //Se convierte el contenido del lienzo en una URL de datos en formato JPEG compatible con la librería jsPDF
-            const dataURL = canvas.toDataURL('image/JPG');
-
-            //Se resuelve la promesa con la URL de datos de la imagen generada. 
-            resolve(dataURL);
-        };
+    return 35; // Y donde empieza el contenido
+}
 
 
-        // en caso de que se genere un error al cargar la imagen se ejecuta onerror
-        img.onerror = function () {
-            reject(new Error('Falla al cargar la Imagen!'));
-        };
+// ═══════════════════════════════════════════════════════════
+// TABLA DE PRODUCTOS
+// ═══════════════════════════════════════════════════════════
+function dibujarTablaProductos(doc, productos, startY, margenL) {
 
-        // inicia el proceso de carga de la imagen y se dispara onload cuando haya cargado la imagen
-        // por tanto, el navegador ya sabe que hacer cuando busque en la url de la imagen
-        img.src = urlImg;
+    // Resumen rápido encima de la tabla
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...COLOR.dark);
+    doc.text('Detalle de productos registrados', margenL, startY);
 
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...COLOR.muted);
+    doc.text(`Total de productos: ${productos.length}`, margenL, startY + 5);
+
+    // Preparar datos
+    const cuerpo = productos.map((p, index) => [
+        index + 1,
+        p.codigoBarra ?? '—',
+        p.nombre ?? '—',
+        '$ ' + parseFloat(p.precio ?? 0).toFixed(2),
+        p.existencia ?? '—',
+        p.IDmarca ?? '—',
+        CATEGORIAS[String(p.IDcategoria)] ?? p.IDcategoria ?? '—',
+    ]);
+
+    doc.autoTable({
+        startY: startY + 8,
+        head: [['#', 'Código', 'Nombre', 'Precio', 'Existencia', 'Marca', 'Categoría']],
+        body: cuerpo,
+        theme: 'grid',
+        headStyles: {
+            fillColor: COLOR.primary,
+            textColor: COLOR.white,
+            fontSize: 9,
+            fontStyle: 'bold',
+            halign: 'center',
+            cellPadding: 3,
+        },
+        bodyStyles: {
+            fontSize: 8,
+            textColor: COLOR.dark,
+            cellPadding: 2.5,
+        },
+        alternateRowStyles: {
+            fillColor: [241, 245, 249], // slate-100
+        },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 8 },   // #
+            1: { halign: 'center', cellWidth: 22 },   // código
+            2: { cellWidth: 'auto' },   // nombre (flexible)
+            3: { halign: 'right', cellWidth: 22 },   // precio
+            4: { halign: 'center', cellWidth: 20 },   // existencia
+            5: { halign: 'center', cellWidth: 18 },   // marca
+            6: { halign: 'center', cellWidth: 26 },   // categoría
+        },
+        margin: { left: 14, right: 14 },
+        // Colorear filas con existencia baja (< 10) en rojo suave
+        didParseCell: function (data) {
+            if (data.section === 'body' && data.column.index === 4) {
+                const val = parseInt(data.cell.raw);
+                if (!isNaN(val) && val < 10) {
+                    data.cell.styles.textColor = [220, 38, 38]; // rojo
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            }
+        },
     });
 }
 
 
-function encabezado(doc, datosImagen) {
-    doc.setFont("Helvetica", "bold"); // fuente y estilo con nueva libreria 3.0.1 de jspdf
-    doc.setFontSize(20); // tamaño de letra
-    doc.setTextColor(0, 0, 255); // establece el color en RGB (0, 0, 255) azul
+// ═══════════════════════════════════════════════════════════
+// GRÁFICA DE BARRAS POR CATEGORÍA
+// ═══════════════════════════════════════════════════════════
+function dibujarGraficaCategorias(doc, productos, pageW, pageH, margenL) {
 
-    /**
-     * reporte de products es el título del pdf
-     * doc.internal.pageSize.getWidth() / 2 => obtiene el ancho de la página y lo divide entre 2 para poder centrar
-     * 20 unidades ==> es el espacio vertical en relación al margen superior
-     * el titulo debe ser un array ["Reporte de productos", "texto 2"] para que funcione correctamente align 
-     * tambien puede ser:   const lineas = ["Reporte de productos", "Catálogo actualizado - Mayo 2025"];
-     * doc.text(lineas, doc.internal.pageSize.getWidth() / 2, 20, { align: "center" });
-     */
-    doc.text(["Reporte de productos"], doc.internal.pageSize.getWidth() / 2, 20, { align: "center" });
+    const startY = 90;
+    const satartYEncabezadoGrafico = 50;
 
+    // Título sección
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...COLOR.dark);
+    doc.text('Distribución de productos por categoría', margenL, satartYEncabezadoGrafico);
 
-    // 0 0 significa coordenas x y y ------- 30 30 es el tamaño de la imagen w y h
-    doc.addImage(datosImagen, 'JPEG', 0, 0, 30, 30);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...COLOR.muted);
+    doc.text('Cantidad de productos registrados en cada categoría', margenL, startY + 5);
+
+    // Contar productos por categoría (usando nombre legible)
+    const conteo = {};
+    for (const p of productos) {
+        const catNombre = CATEGORIAS[String(p.IDcategoria)] ?? `Cat. ${p.IDcategoria}`;
+        conteo[catNombre] = (conteo[catNombre] ?? 0) + 1;
+    }
+
+    const categorias = Object.keys(conteo);
+    const valores = Object.values(conteo);
+    const maxVal = Math.max(...valores);
+
+    // Dimensiones de la gráfica
+    const chartX = margenL;
+    const chartY = startY + 55;   // base de las barras (eje X)
+    const chartW = pageW - 28;    // ancho total
+    const maxBarH = 80;            // altura máx de barra en mm
+    const gap = 4;             // espacio entre barras
+    const n = categorias.length;
+    const barW = (chartW - gap * (n - 1)) / n;
+
+    // Colores cíclicos para las barras
+    const barColors = [
+        COLOR.accent, COLOR.amber, COLOR.success,
+        [124, 58, 237], [239, 68, 68], [20, 184, 166],
+        [249, 115, 22], [99, 102, 241],
+    ];
+
+    // Eje Y: líneas guía horizontales
+    doc.setDrawColor(...COLOR.muted);
+    doc.setLineWidth(0.2);
+    const guias = 5;
+    for (let g = 0; g <= guias; g++) {
+        const y = chartY - (maxBarH / guias) * g;
+        doc.setLineDash([2, 2]);
+        doc.line(chartX, y, chartX + chartW, y);
+        doc.setLineDash([]);
+
+        // etiqueta del eje Y
+        const valGuia = Math.round((maxVal / guias) * g);
+        doc.setFontSize(6.5);
+        doc.setTextColor(...COLOR.muted);
+        doc.text(String(valGuia), chartX - 2, y + 1, { align: 'right' });
+    }
+
+    // Dibujar barras
+    categorias.forEach((cat, i) => {
+        const x = chartX + i * (barW + gap);
+        const barH = (valores[i] / maxVal) * maxBarH;
+        const y = chartY - barH;
+        const color = barColors[i % barColors.length];
+
+        // Sombra suave debajo de la barra
+        doc.setFillColor(200, 200, 200);
+        doc.roundedRect(x + 1, y + 1, barW, barH, 1.5, 1.5, 'F');
+
+        // Barra principal
+        doc.setFillColor(...color);
+        doc.roundedRect(x, y, barW, barH, 1.5, 1.5, 'F');
+
+        // Valor encima de la barra
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...COLOR.dark);
+        doc.text(String(valores[i]), x + barW / 2, y - 2, { align: 'center' });
+
+        // Etiqueta de categoría debajo del eje X
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(...COLOR.dark);
+        doc.text(cat, x + barW / 2, chartY + 5, { align: 'center', maxWidth: barW + 2 });
+    });
+
+    // Línea del eje X
+    doc.setDrawColor(...COLOR.dark);
+    doc.setLineWidth(0.5);
+    doc.line(chartX, chartY, chartX + chartW, chartY);
+
+    // Línea del eje Y
+    doc.line(chartX, chartY - maxBarH - 5, chartX, chartY);
+
+    // Leyenda con totales debajo de la gráfica
+    const leyendaY = chartY + 22;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...COLOR.dark);
+    doc.text('Resumen por categoría:', margenL, leyendaY);
+
+    doc.autoTable({
+        startY: leyendaY + 4,
+        head: [['Categoría', 'Cantidad de productos', '% del total']],
+        body: categorias.map((cat, i) => [
+            cat,
+            valores[i],
+            ((valores[i] / productos.length) * 100).toFixed(1) + ' %',
+        ]),
+        theme: 'striped',
+        headStyles: {
+            fillColor: COLOR.primary,
+            textColor: COLOR.white,
+            fontSize: 8,
+            halign: 'center',
+        },
+        bodyStyles: { fontSize: 8, halign: 'center' },
+        columnStyles: { 0: { halign: 'left' } },
+        margin: { left: 14, right: 14 },
+    });
 }
 
 
-function graficaBarras(doc, categoryCounts, chartPosX, chartPosY, chartWidth, maxBarHeight, barSpacing) {
+// ═══════════════════════════════════════════════════════════
+// PIE DE PÁGINA
+// ═══════════════════════════════════════════════════════════
+function dibujarPiePagina(doc, pageNum, totalPages, pageW, pageH, margenL, margenR) {
 
-    const categoryColors = {
-        lapices: [0, 0, 255], // Azul
-        borradores: [255, 0, 0], // Rojo
-        lapiceros: [236, 51, 255], // lila
-        libretas: [255, 240, 51], // amarillo
-        marcadores: [51, 255, 249], // azul cielo
-        hojas: [147, 255, 51], // limón
-        juegos_didacticos: [0, 0, 205], // 
-        rompecabezas: [255, 51, 131] // fuccia
-    };
+    const y = pageH - 8;
 
-    //calcular el total de ancho de cada barra de la gráfica.
-    //Object.keys(categoryCounts).length: devuelve el número total de categorías en el objeto categoryCounts
-    const barWidth = (chartWidth - (barSpacing * (Object.keys(categoryCounts).length - 1))) / Object.keys(categoryCounts).length;
-    console.log(barWidth); // imprime el ancho de cada barra
+    // Línea separadora
+    doc.setDrawColor(...COLOR.primary);
+    doc.setLineWidth(0.4);
+    doc.line(margenL, y - 3, margenR, y - 3);
 
+    // Texto izquierdo
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(...COLOR.muted);
+    doc.text('La Picito — Sistema de Gestión de Inventario', margenL, y);
 
-    // cuenta el valor máximo de cada categoría para ver quién tendrá la barra mas alta
-    let maxCount = 0;
-    for (const category in categoryCounts) {
-        if (categoryCounts[category] > maxCount) { // categoryCounts[hojas]>maxCount
-            maxCount = categoryCounts[category];
-
-        }
-    }
-
-
-    /**
-     * barraActualEjeX: Esta variable lleva un seguimiento de la posición actual en el eje X donde se dibujará 
-     * la próxima barra en el gráfico. Inicialmente se establece en chartPosX = 10, 
-     * que es la posición horizontal donde comienza el gráfico de barras.
-     */
-    let barraActualEjeX = chartPosX;
-
-
-    // =================== GRAFICANDO LAS BARRAS ========
-
-    for (const category in categoryCounts) {
-        // altura de cada barra: categoryCounts[hojas] / maxCount
-        const barHeight = (categoryCounts[category] / maxCount) * maxBarHeight; //maxBarHeight:100
-
-        // se le aplica un color a cada barra
-        const colorBarra = categoryColors[category]; // se recupera el nombre del color
-        doc.setFillColor(colorBarra[0], colorBarra[1], colorBarra[2]); // se le aplica el color RGB
-
-
-        // dubuja el rectángulo en la posición (barraActualEjeX, chartPosY) con el ancho de la barra y la altura negativa porque debuja hacia arriba
-        doc.rect(barraActualEjeX, chartPosY, barWidth, -barHeight, "F"); // la F indica que se debe colorear el rentángulo
-        doc.setTextColor(0); // color de texto para el total de cada categoría
-        doc.setFontSize(12); // tamaño de texto del total de cada categoría
-        // 10 + (barWidth=41.25/2)-5=25.6                    200+5=205, valor de cada categoria
-        // ejeX, ejeY, valor
-        doc.text(barraActualEjeX + (barWidth / 2) - 5, chartPosY + 5, String(categoryCounts[category]));
-
-
-        //lo mismo para las etiquetas de categoría pero para el eje Y se le suman otros 5
-        //doc.setFontType("bolditalic");
-        doc.setFont("Helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text(barraActualEjeX + (barWidth / 2) - 5, chartPosY + 10, category, { maxWidth: barWidth, align: "center" });
-
-
-        // se actualiza la posición del eje X
-        barraActualEjeX += barWidth + barSpacing;
-    }
+    // Número de página (derecha)
+    doc.text(`Página ${pageNum} de ${totalPages}`, margenR, y, { align: 'right' });
 }

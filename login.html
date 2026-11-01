@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
@@ -12,86 +11,122 @@
         crossorigin="anonymous"></script>
     <link rel="shortcut icon" href="./src/assets/icon/logo.png" type="image/x-icon">
     <link rel="stylesheet" href="./src/css/loginStyle.css">
-    <title>Eventos</title>
+    <title>La Picito — Iniciar sesión</title>
 </head>
-
 
 <body>
 
-    <header>
+    <main class="login-wrapper">
 
-    </header>
-    <main>
-        <section>
+        <!-- Panel izquierdo decorativo -->
+        <aside class="login-brand" aria-hidden="true">
+            <div class="login-brand__content">
+                <div class="login-brand__icon">✏️</div>
+                <h1 class="login-brand__name">La Picito</h1>
+                <p class="login-brand__tagline">Tu papelería de confianza</p>
+                <ul class="login-brand__features">
+                    <li>📦 Control de inventario</li>
+                    <li>🗂️ Gestión de categorías</li>
+                    <li>🛒 Registro de productos</li>
+                </ul>
+            </div>
+            <div class="login-brand__decoration" aria-hidden="true">
+                <span>📐</span><span>📏</span><span>🖊️</span>
+                <span>📒</span><span>🖇️</span><span>✂️</span>
+            </div>
+        </aside>
 
+        <!-- Panel derecho: formulario -->
+        <section class="login-form-panel">
+            <div class="login-card">
 
-            <div class="modal" tabindex="-1" id="loginModal">
-                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Login</h5>
-                        </div>
-                        <div class="modal-body">
-
-                            <!-- get no necesita un servidor
-                            <form action="index.html" method="GET" class="needs-validation" novalidate>-->
-                            <form class="needs-validation" novalidate>
-                                <div class="mb-3">
-                                    <label for="txtEmail" class="form-label">Email address</label>
-                                    <input type="email" class="form-control" id="txtEmail" placeholder="luna@gmail.com"
-                                        aria-describedby="emailHelp" required>
-                                    <div class="invalid-feedback">
-                                        Ingresa tu correo electrónico!!.
-                                    </div>
-                                    <div class="valid-feedback">
-                                        Bien hecho!
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="idPassword" class="form-label">Password</label>
-                                    <input type="password" class="form-control" id="idPassword" placeholder="*****"
-                                        required>
-                                    <div class="invalid-feedback">
-                                        Ingresa una contraseña!!.
-                                    </div>
-                                    <div class="valid-feedback">
-                                        Bien hecho!
-                                    </div>
-                                </div>
-                                <div class="mb-3 form-check">
-                                    <input type="checkbox" class="form-check-input" id="exampleCheck1" required>
-                                    <label class="form-check-label" for="exampleCheck1">Terminos y condiciones</label>
-                                    <div class="invalid-feedback">
-                                        Acepta los términos y condiciones.
-                                    </div>
-                                    <div class="valid-feedback">
-                                        Bien hecho!
-                                    </div>
-                                    <div class="alert alert-danger" role="alert">
-                                        Correo o contraseña incorrecto!!
-                                    </div>
-
-                                </div>
-
-                                <div class="modal-footer">
-                                    <button type="submit" class="btn btn-primary" id="btnLogin">Login</button>
-                                    <button type="button" class="btn btn-primary" id="btnRegistry">Registrarse</button>
-
-
-                                </div>
-                            </form>
-
-                        </div>
-
-                    </div>
+                <div class="login-card__header">
+                    <img src="./src/assets/icon/logo.png" alt="Logo La Picito" class="login-card__logo">
+                    <h2 class="login-card__title">Bienvenido</h2>
+                    <p class="login-card__subtitle">Ingresa tus credenciales para continuar</p>
                 </div>
+
+                <form class="needs-validation" novalidate id="loginForm">
+
+                    <!-- Email -->
+                    <div class="mb-4">
+                        <label for="txtEmail" class="form-label login-label">Correo electrónico</label>
+                        <div class="input-group">
+                            <span class="input-group-text login-input-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    viewBox="0 0 16 16">
+                                    <path
+                                        d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z" />
+                                </svg>
+                            </span>
+                            <input type="email" class="form-control login-input" id="txtEmail"
+                                placeholder="correo@ejemplo.com" aria-describedby="emailHelp" required
+                                autocomplete="email">
+                            <div class="invalid-feedback">Ingresa un correo electrónico válido.</div>
+                            <div class="valid-feedback">¡Correcto!</div>
+                        </div>
+                    </div>
+
+                    <!-- Contraseña -->
+                    <div class="mb-4">
+                        <label for="idPassword" class="form-label login-label">Contraseña</label>
+                        <div class="input-group">
+                            <span class="input-group-text login-input-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    viewBox="0 0 16 16">
+                                    <path
+                                        d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2" />
+                                </svg>
+                            </span>
+                            <input type="password" class="form-control login-input" id="idPassword"
+                                placeholder="••••••••" required autocomplete="current-password">
+                            <button class="btn login-toggle-pwd" type="button" id="btnTogglePwd"
+                                aria-label="Mostrar u ocultar contraseña">
+                                <svg id="iconEye" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                    fill="currentColor" viewBox="0 0 16 16">
+                                    <path
+                                        d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z" />
+                                    <path
+                                        d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0" />
+                                </svg>
+                            </button>
+                            <div class="invalid-feedback">Ingresa tu contraseña.</div>
+                            <div class="valid-feedback">¡Correcto!</div>
+                        </div>
+                    </div>
+
+                    <!-- Términos y condiciones -->
+                    <div class="mb-4">
+                        <div class="form-check login-check">
+                            <input type="checkbox" class="form-check-input" id="exampleCheck1" required>
+                            <label class="form-check-label login-check__label" for="exampleCheck1">
+                                Acepto los <a href="#" class="login-link">términos y condiciones</a>
+                            </label>
+                            <div class="invalid-feedback">Debes aceptar los términos y condiciones.</div>
+                        </div>
+                    </div>
+
+                    <!-- Alerta de error -->
+                    <div class="alert login-alert-error" role="alert" id="alertError">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            viewBox="0 0 16 16" aria-hidden="true">
+                            <path
+                                d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2" />
+                        </svg>
+                        Correo o contraseña incorrectos.
+                    </div>
+
+                    <!-- Botón -->
+                    <button type="submit" class="btn login-btn-submit w-100" id="btnLogin">
+                        Iniciar sesión
+                    </button>
+
+                </form>
+
             </div>
         </section>
+
     </main>
-
-    <footer>
-
-    </footer>
 
     <script src="./src/js/login.js"></script>
 </body>
