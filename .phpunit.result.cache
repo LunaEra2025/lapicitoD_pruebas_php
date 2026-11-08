@@ -1,1 +1,1 @@
-{"version":2,"defects":[],"times":{"Tests\\CalculadoraTest::suma_dos_numeros":0,"Tests\\ConnectionTest::conectar_a_BD":0.003}}
+{"version":2,"defects":[],"times":{"Tests\\CalculadoraTest::suma_dos_numeros":0,"ProductCrudTest::inserta_un_producto":0.002,"ConnectionIntegrationTest::conectar_a_BD":0.003}}
