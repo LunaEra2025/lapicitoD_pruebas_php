@@ -3,6 +3,7 @@
 
 # Dependencias
 node_modules/
+vendor/
 
 # Pruebas unitarias
 unitTest/
@@ -10,10 +11,19 @@ package-lock.json
 package.json
 vitest.config.js
 
+# pruebas unitarias de php
+tests/
+.phpunit.result.cache
+composer.json
+composer.lock
+phpunit.xml
+
 # Configuración de agentes (Kiro / Amazon Q)
 .amazonq/
 
 # Archivos del sistema operativo
 .DS_Store
 Thumbs.db
-/vendor/
+
+
+
