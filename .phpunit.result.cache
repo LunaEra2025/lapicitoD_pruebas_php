@@ -1,1 +1,1 @@
-{"version":2,"defects":[],"times":{"Tests\\CalculadoraTest::suma_dos_numeros":0,"ProductCrudTest::inserta_un_producto":0.002,"ConnectionIntegrationTest::conectar_a_BD":0.003}}
+{"version":2,"defects":[],"times":{"Tests\\CalculadoraTest::suma_dos_numeros":0.003,"ProductCrudTest::inserta_un_producto":0.008,"ConnectionIntegrationTest::conectar_a_BD":0.022,"ProductCrudTest::rechaza_insercion_cuando_falta_un_campo_del_formulario":0,"ProductCrudTest::rechaza_insercion_cuando_codigo_barra_esta_vacio":0,"ProductCrudTest::rechaza_insercion_cuando_la_bd_lanza_una_excepcion":0}}
